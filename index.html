@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSpacedesk - Browser-based Display Extension</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .tagline {
+            font-style: italic;
+            opacity: 0.9;
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .panel {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-panel {
+            flex: 1;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .display-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 500px;
+        }
+        
+        h2 {
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #7f8c8d, #95a5a6);
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.3);
+            margin: 15px 0;
+        }
+        
+        .status.connected {
+            background-color: rgba(46, 204, 113, 0.3);
+        }
+        
+        .status.error {
+            background-color: rgba(231, 76, 60, 0.3);
+        }
+        
+        #remoteScreen {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            margin-top: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .control-panel {
+                max-width: 100%;
+            }
+        }
+        
+        .quality-control {
+            margin: 15px 0;
+        }
+        
+        .quality-control label {
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .quality-control input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>WebSpacedesk</h1>
+        <p class="tagline">Extend your display to this device using WebRTC technology</p>
+    </header>
+    
+    <div class="container">
+        <div class="panel control-panel">
+            <h2>Connection Control</h2>
+            <button id="shareScreen" class="btn">Share This Screen</button>
+            <button id="connect" class="btn">Connect to Server</button>
+            <button id="disconnect" class="btn btn-secondary">Disconnect</button>
+            
+            <div class="quality-control">
+                <label for="quality">Stream Quality:</label>
+                <input type="range" id="quality" min="0.1" max="1" step="0.1" value="0.7">
+                <span id="qualityValue">70%</span>
+            </div>
+            
+            <div class="status" id="status">
+                Status: Disconnected
+            </div>
+            
+            <div class="instructions">
+                <h3>How to use:</h3>
+                <ol>
+                    <li>Open this page on both devices</li>
+                    <li>On your primary device, click "Share This Screen"</li>
+                    <li>On the secondary device, click "Connect to Server"</li>
+                    <li>Select what you want to share when prompted</li>
+                </ol>
+                <p>Note: Both devices need to be on the same network for this to work.</p>
+            </div>
+        </div>
+        
+        <div class="panel display-panel">
+            <h2>Remote Display</h2>
+            <img id="remoteScreen" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQ4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJtb25vc3BhY2UiIGZvbnQtc2l6ZT0iMThweCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPldhaXRpbmcgZm9yIGNvbm5lY3Rpb24uLi48L3RleHQ+PC9zdmc+" alt="Remote screen display">
+            <p class="instructions">The shared screen will appear here once connected.</p>
+        </div>
+    </div>
+    
+    <footer>
+        <p>WebSpacedesk &copy; 2023 | Created with HTML, CSS, and JavaScript</p>
+        <p>Note: This is a simplified demonstration. For actual multi-monitor support, consider the native spacedesk application.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const shareScreenBtn = document.getElementById('shareScreen');
+            const connectBtn = document.getElementById('connect');
+            const disconnectBtn = document.getElementById('disconnect');
+            const statusDiv = document.getElementById('status');
+            const remoteScreen = document.getElementById('remoteScreen');
+            const qualitySlider = document.getElementById('quality');
+            const qualityValue = document.getElementById('qualityValue');
+            
+            let localStream = null;
+            let peerConnection = null;
+            let dataChannel = null;
+            
+            // Update quality value display
+            qualitySlider.addEventListener('input', function() {
+                qualityValue.textContent = Math.round(this.value * 100) + '%';
+            });
+            
+            // Simulate screen sharing (in a real app, this would use WebRTC)
+            shareScreenBtn.addEventListener('click', function() {
+                statusDiv.textContent = 'Status: Sharing screen...';
+                statusDiv.className = 'status';
+                
+                // In a real implementation, we would use:
+                // navigator.mediaDevices.getDisplayMedia({video: true})
+                //   .then(stream => { ... })
+                //   .catch(error => { ... });
+                
+                // For this demo, we'll simulate the process
+                setTimeout(() => {
+                    statusDiv.textContent = 'Status: Screen shared. Waiting for connection...';
+                    statusDiv.className = 'status';
+                    
+                    // Simulate receiving connection
+                    setTimeout(() => {
+                        simulateIncomingConnection();
+                    }, 2000);
+                }, 1000);
+            });
+            
+            // Simulate connecting to a server
+            connectBtn.addEventListener('click', function() {
+                statusDiv.textContent = 'Status: Connecting...';
+                statusDiv.className = 'status';
+                
+                // In a real implementation, we would connect to a signaling server
+                // and establish a WebRTC connection here
+                
+                // For this demo, we'll simulate the connection process
+                setTimeout(() => {
+                    statusDiv.textContent = 'Status: Connected to server';
+                    statusDiv.className = 'status connected';
+                    
+                    // Simulate receiving a screen stream
+                    simulateScreenReception();
+                }, 1500);
+            });
+            
+            // Disconnect
+            disconnectBtn.addEventListener('click', function() {
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+                
+                if (peerConnection) {
+                    peerConnection.close();
+                }
+                
+                statusDiv.textContent = 'Status: Disconnected';
+                statusDiv.className = 'status';
+                
+                // Reset the remote screen display
+                remoteScreen.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQ4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJtb25vc3BhY2UiIGZvbnQtc2l6ZT0iMThweCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNvbm5lY3Rpb24gY2xvc2VkLjwvdGV4dD48L3N2Zz4=";
+            });
+            
+            // Simulate screen reception for demo purposes
+            function simulateScreenReception() {
+                // In a real implementation, this would be a video stream from WebRTC
+                // For demo, we'll use a static image and simulate interactivity
+                
+                remoteScreen.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQ4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMjIyIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJtb25vc3BhY2UiIGZvbnQtc2l6ZT0iMThweCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlNjcmVlbiBTaGFyZSBEZW1vICgzMi1iaXQgY29sb3IpPC90ZXh0PjxjaXJjbGUgY3g9IjMyMCIgY3k9IjI0MCIgcj0iNjAiIGZpbGw9IiM0NjciLz48L3N2Zz4=";
+                
+                // Add click simulation for demo interactivity
+                remoteScreen.addEventListener('click', function(e) {
+                    const rect = remoteScreen.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // In a real implementation, this would send mouse events to the host
+                    console.log(`Mouse click at: ${x}, ${y}`);
+                    
+                    // Visual feedback for the demo
+                    const dot = document.createElement('div');
+                    dot.style.position = 'absolute';
+                    dot.style.left = (e.clientX - 5) + 'px';
+                    dot.style.top = (e.clientY - 5) + 'px';
+                    dot.style.width = '10px';
+                    dot.style.height = '10px';
+                    dot.style.backgroundColor = 'red';
+                    dot.style.borderRadius = '50%';
+                    dot.style.zIndex = '1000';
+                    document.body.appendChild(dot);
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(dot);
+                    }, 500);
+                });
+            }
+            
+            // Simulate an incoming connection for the sharing side
+            function simulateIncomingConnection() {
+                statusDiv.textContent = 'Status: Connected! Screen is being shared.';
+                statusDiv.className = 'status connected';
+                
+                // In a real implementation, we would set up WebRTC data channels
+                // to send mouse and keyboard events back to the host
+            }
+            
+            // Simulated WebRTC setup function (for a real implementation)
+            function setupWebRTC() {
+                // This is where a real implementation would set up:
+                // 1. Signaling server connection
+                // 2. STUN/TURN servers for NAT traversal
+                // 3. PeerConnection configuration
+                // 4. Data channels for input forwarding
+                
+                const configuration = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                };
+                
+                peerConnection = new RTCPeerConnection(configuration);
+                
+                // Set up data channel for input events
+                dataChannel = peerConnection.createDataChannel('input');
+                dataChannel.onopen = () => console.log('Data channel opened');
+                dataChannel.onclose = () => console.log('Data channel closed');
+                
+                // Handle incoming ICE candidates
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        // Send candidate to remote peer via signaling server
+                    }
+                };
+                
+                // Handle incoming track events
+                peerConnection.ontrack = event => {
+                    // Attach remote stream to video element
+                    remoteScreen.srcObject = event.streams[0];
+                };
+            }
+        });
+    </script>
+</body>
+</html>
